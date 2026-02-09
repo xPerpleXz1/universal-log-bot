@@ -1,0 +1,21 @@
+# ══════════════════════════════════════════════════════
+# Universal Log Bot - Admin Edition
+# Requirements fuer Railway Deployment
+# ══════════════════════════════════════════════════════
+
+# Discord Bot Framework
+discord.py==2.3.2
+
+# Google Sheets Integration
+google-api-python-client==2.108.0
+google-auth==2.23.4
+google-auth-oauthlib==1.1.0
+
+# Timezone Support
+pytz==2024.1
+
+# Async HTTP
+aiohttp==3.9.1
+
+# Environment Variables
+python-dotenv==1.0.0
