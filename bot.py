@@ -1790,6 +1790,10 @@ async def on_ready():
     bot.add_view(LogPanelView())
     bot.add_view(AdminPanelView())
 
+    # Auto Dashboard Task starten
+    if not auto_dashboard_update.is_running():
+        auto_dashboard_update.start()
+
     # Status setzen
     await bot.change_presence(
         activity=discord.Activity(
@@ -1870,8 +1874,5 @@ if __name__ == "__main__":
     if not GOOGLE_CREDENTIALS_BASE64:
         print("WARNUNG: GOOGLE_CREDENTIALS_BASE64 nicht gesetzt!")
         print("Google Sheets Features werden deaktiviert.")
-
-    # Auto Dashboard starten
-    auto_dashboard_update.start()
 
     bot.run(DISCORD_TOKEN)
