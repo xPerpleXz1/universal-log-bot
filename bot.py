@@ -29,9 +29,9 @@ Changelog v2.0.0:
   - FIX: Leaderboard-Command Response-Handling
   - FIX: Panel aktualisiert sich automatisch bei Kategorie-Aenderungen
   - NEU: Direkter Screenshot-Upload statt URL-Eingabe (Zwei-Schritt-Flow)
-  - NEU: Retry-Mechanismus fuer Google Sheets API (3 Versuche)
+  - NEU: Retry-Mechanismus für Google Sheets API (3 Versuche)
   - NEU: Bestaetigungsdialog vor Auszahlung
-  - NEU: Audit-Log fuer Admin-Aktionen
+  - NEU: Audit-Log für Admin-Aktionen
   - NEU: Rate-Limiting (1 Log pro 30 Sekunden pro User)
   - NEU: Einstellungen-Tab wird aktiv genutzt
   - NEU: Bild-URL-Validierung
@@ -122,7 +122,7 @@ bot = commands.Bot(
 bot.sheets_service = None
 bot.categories_cache = {}       # {name: {"betrag": int, "emoji": str, "beschreibung": str, "aktiv": bool}}
 bot.settings_cache = {}         # Einstellungen aus dem Sheet
-bot.panel_messages = {}         # {channel_id: message_id} - fuer Auto-Refresh
+bot.panel_messages = {}         # {channel_id: message_id} - für Auto-Refresh
 bot.user_cooldowns = {}         # {user_id: datetime} - Rate Limiting
 
 
@@ -160,7 +160,7 @@ def init_google_sheets():
 
 async def sheets_call(func, *args, retries=MAX_RETRIES, **kwargs):
     """
-    Async Wrapper fuer synchrone Google Sheets API Calls.
+    Async Wrapper für synchrone Google Sheets API Calls.
     - Laeuft in einem Thread-Pool (blockiert den Event Loop nicht)
     - Retry-Mechanismus bei temporaeren Fehlern
     """
@@ -232,7 +232,7 @@ async def ensure_sheet_tabs():
 
 
 async def set_sheet_headers():
-    """Setze Header fuer alle Tabs"""
+    """Setze Header für alle Tabs"""
     if not bot.sheets_service:
         return
 
@@ -545,7 +545,7 @@ async def update_log_image(row_number: int, image_url: str):
 
 
 async def get_user_stats(user_id: int, week_filter: str = None):
-    """Hole Statistiken fuer einen User"""
+    """Hole Statistiken für einen User"""
     if not bot.sheets_service:
         return {"logs": 0, "betrag": 0, "details": {}}
 
@@ -583,7 +583,7 @@ async def get_user_stats(user_id: int, week_filter: str = None):
 
 
 async def get_all_user_stats(week_filter: str = None):
-    """Hole Statistiken fuer alle User"""
+    """Hole Statistiken für alle User"""
     if not bot.sheets_service:
         return {}
 
@@ -892,7 +892,7 @@ def check_cooldown(user_id: int) -> Optional[int]:
 
 
 def set_cooldown(user_id: int):
-    """Setze Cooldown fuer User"""
+    """Setze Cooldown für User"""
     bot.user_cooldowns[user_id] = datetime.now()
 
 
@@ -939,7 +939,7 @@ async def refresh_all_panels():
 
 
 def build_panel_embed() -> discord.Embed:
-    """Erstelle das Panel-Embed (wiederverwendbar fuer Refresh)"""
+    """Erstelle das Panel-Embed (wiederverwendbar für Refresh)"""
     active_count = sum(1 for v in bot.categories_cache.values() if v.get("aktiv", True))
 
     embed = discord.Embed(
@@ -947,7 +947,7 @@ def build_panel_embed() -> discord.Embed:
         description=(
             "Waehle eine Kategorie um einen Log-Eintrag zu erstellen.\n"
             "Deine Logs werden automatisch in Google Sheets gespeichert\n"
-            "und fuer die woechentliche Auszahlung berechnet."
+            "und für die woechentliche Auszahlung berechnet."
         ),
         color=Colors.PANEL
     )
@@ -972,7 +972,7 @@ def build_panel_embed() -> discord.Embed:
 # ══════════════════════════════════════════════════════════════════════════════
 
 class LogModal(discord.ui.Modal, title="Log eintragen"):
-    """Modal fuer Log-Eintraege (nur Beschreibung, Bild kommt separat)"""
+    """Modal für Log-Eintraege (nur Beschreibung, Bild kommt separat)"""
 
     def __init__(self, kategorie: str):
         super().__init__()
@@ -1060,7 +1060,7 @@ class AddCategoryModal(discord.ui.Modal, title="Neue Kategorie erstellen"):
 
     name = discord.ui.TextInput(
         label="Name der Kategorie",
-        placeholder="z.B. Duengen, Reparieren, Panel",
+        placeholder="z.B. Düngen, Reparieren, Panel",
         style=discord.TextStyle.short,
         required=True,
         max_length=50
@@ -1076,7 +1076,7 @@ class AddCategoryModal(discord.ui.Modal, title="Neue Kategorie erstellen"):
 
     emoji_field = discord.ui.TextInput(
         label="Emoji (optional)",
-        placeholder="z.B. Duengen, Hammer, Pflanze",
+        placeholder="z.B. Düngen, Hammer, Pflanze",
         style=discord.TextStyle.short,
         required=False,
         max_length=30
@@ -1253,7 +1253,7 @@ class ScreenshotUploadView(discord.ui.View):
         self.channel_id = channel_id
         self.screenshot_uploaded = False
 
-    @discord.ui.button(label="Screenshot hinzufuegen", style=discord.ButtonStyle.secondary, emoji="📷")
+    @discord.ui.button(label="Screenshot hinzufügen", style=discord.ButtonStyle.secondary, emoji="📷")
     async def add_screenshot(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("Das ist nicht dein Log!", ephemeral=True)
@@ -1265,7 +1265,7 @@ class ScreenshotUploadView(discord.ui.View):
                 description=(
                     "Sende deinen **Screenshot als naechste Nachricht** in diesem Channel.\n"
                     "Du hast **60 Sekunden** Zeit.\n\n"
-                    "Einfach das Bild per Drag & Drop oder ueber das + Symbol hochladen."
+                    "Einfach das Bild per Drag & Drop oder über das + Symbol hochladen."
                 ),
                 color=Colors.INFO
             ),
@@ -1352,7 +1352,7 @@ class ScreenshotUploadView(discord.ui.View):
 class LogPanelView(discord.ui.View):
     """
     Interaktives Log-Panel mit dynamischen Buttons.
-    Buttons haben KEINE Callbacks - die Logik wird komplett ueber
+    Buttons haben KEINE Callbacks - die Logik wird komplett über
     on_interaction behandelt (siehe unten). Das erlaubt korrekte
     Behandlung nach Bot-Restart, auch wenn Kategorien sich geaendert haben.
     """
@@ -1372,14 +1372,14 @@ class LogPanelView(discord.ui.View):
         if not active_categories:
             return
 
-        # Max 4 Rows fuer Kategorien (Row 0-3), Row 4 fuer Stats
+        # Max 4 Rows für Kategorien (Row 0-3), Row 4 für Stats
         # Max 5 Buttons pro Row -> max 20 Kategorie-Buttons
         cat_list = list(active_categories.items())[:20]
 
         for idx, (name, data) in enumerate(cat_list):
             row = idx // 5  # 0-4 pro Row, max Row 3
             if row > 3:
-                break  # Sicherheit: nicht mehr als 4 Rows fuer Kategorien
+                break  # Sicherheit: nicht mehr als 4 Rows für Kategorien
 
             emoji_text = data.get("emoji", "")
             label = f"{emoji_text} {name}" if emoji_text else name
@@ -1390,7 +1390,7 @@ class LogPanelView(discord.ui.View):
                 custom_id=f"log_cat_{name}",
                 row=row
             )
-            # KEIN Callback - wird ueber on_interaction gehandelt
+            # KEIN Callback - wird über on_interaction gehandelt
             self.add_item(button)
 
         # Stats-Button in der letzten Row (4)
@@ -1400,7 +1400,7 @@ class LogPanelView(discord.ui.View):
             custom_id="log_my_stats",
             row=4
         )
-        # KEIN Callback - wird ueber on_interaction gehandelt
+        # KEIN Callback - wird über on_interaction gehandelt
         self.add_item(stats_button)
 
 
@@ -1410,7 +1410,7 @@ class AdminPanelView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Kategorie hinzufuegen", style=discord.ButtonStyle.success, custom_id="admin_add_cat", row=0)
+    @discord.ui.button(label="Kategorie hinzufügen", style=discord.ButtonStyle.success, custom_id="admin_add_cat", row=0)
     async def add_category(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not is_admin(interaction):
             await interaction.response.send_message(
@@ -1502,7 +1502,7 @@ class AdminPanelView(discord.ui.View):
         embed.set_footer(text=f"Gesamt: {len(bot.categories_cache)} Kategorien")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @discord.ui.button(label="Wochen-Uebersicht", style=discord.ButtonStyle.secondary, custom_id="admin_week_stats", row=1)
+    @discord.ui.button(label="Wochen-Übersicht", style=discord.ButtonStyle.secondary, custom_id="admin_week_stats", row=1)
     async def week_overview(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not is_admin(interaction):
             await interaction.response.send_message(
@@ -1517,7 +1517,7 @@ class AdminPanelView(discord.ui.View):
         all_stats = await get_all_user_stats(week_filter=current_week)
 
         embed = discord.Embed(
-            title=f"Wochen-Uebersicht ({current_week})",
+            title=f"Wochen-Übersicht ({current_week})",
             color=Colors.STATS
         )
 
@@ -1594,7 +1594,7 @@ class AdminPanelView(discord.ui.View):
 
 
 class CategorySelectView(discord.ui.View):
-    """Dropdown fuer Kategorie-Auswahl"""
+    """Dropdown für Kategorie-Auswahl"""
 
     def __init__(self, mode: str = "edit", admin: discord.Member = None):
         super().__init__(timeout=120)
@@ -1773,7 +1773,7 @@ class PayoutConfirmView(discord.ui.View):
 
 
 class PayoutSelectView(discord.ui.View):
-    """View fuer Auszahlungsauswahl"""
+    """View für Auszahlungsauswahl"""
 
     def __init__(self, week: str, users: dict, admin: discord.Member):
         super().__init__(timeout=300)
@@ -1794,7 +1794,7 @@ class PayoutSelectView(discord.ui.View):
 
         if options:
             select = discord.ui.Select(
-                placeholder="User fuer Auszahlung waehlen...",
+                placeholder="User für Auszahlung waehlen...",
                 options=options[:25],
                 max_values=min(len(options), 25),
                 custom_id="payout_select"
@@ -1906,7 +1906,7 @@ async def setup_command(interaction: discord.Interaction):
     # Standard-Kategorien erstellen falls leer
     if not bot.categories_cache:
         default_cats = [
-            ("Duengen", 10000, "Pflanze", "Plantagen duengen"),
+            ("Düngen", 10000, "Pflanze", "Plantagen düngen"),
             ("Reparieren", 15000, "Werkzeug", "Fahrzeuge/Gebaeude reparieren"),
             ("Panel", 20000, "Monitor", "Panel platziert"),
         ]
@@ -1924,7 +1924,7 @@ async def setup_command(interaction: discord.Interaction):
     embed.description = "\n".join([f"  {s}" for s in steps])
     embed.add_field(
         name="Naechste Schritte",
-        value="1. `/panel` - Log-Panel fuer User erstellen\n"
+        value="1. `/panel` - Log-Panel für User erstellen\n"
               "2. `/admin` - Admin-Panel oeffnen\n"
               "3. `/hilfe` - Alle Befehle anzeigen",
         inline=False
@@ -1939,7 +1939,7 @@ async def setup_command(interaction: discord.Interaction):
     await interaction.followup.send(embed=embed, ephemeral=True)
 
 
-@bot.tree.command(name="panel", description="Log-Panel fuer Mitglieder erstellen")
+@bot.tree.command(name="panel", description="Log-Panel für Mitglieder erstellen")
 async def panel_command(interaction: discord.Interaction):
     if not is_admin(interaction):
         await interaction.response.send_message(
@@ -1955,7 +1955,7 @@ async def panel_command(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed, view=view)
 
-    # Panel-Nachricht merken fuer Auto-Refresh
+    # Panel-Nachricht merken für Auto-Refresh
     try:
         msg = await interaction.original_response()
         bot.panel_messages[interaction.channel_id] = msg.id
@@ -1991,7 +1991,7 @@ async def admin_command(interaction: discord.Interaction):
     embed.add_field(
         name="Verwaltung",
         value=(
-            "**Kategorie hinzufuegen** - Neue Log-Kategorie erstellen\n"
+            "**Kategorie hinzufügen** - Neue Log-Kategorie erstellen\n"
             "**Kategorie bearbeiten** - Betrag/Infos anpassen\n"
             "**Kategorie deaktivieren** - Aus Panel entfernen"
         ),
@@ -2001,8 +2001,8 @@ async def admin_command(interaction: discord.Interaction):
     embed.add_field(
         name="Auswertung & Tools",
         value=(
-            "**Alle Kategorien** - Uebersicht aller Kategorien\n"
-            "**Wochen-Uebersicht** - Stats der aktuellen Woche\n"
+            "**Alle Kategorien** - Übersicht aller Kategorien\n"
+            "**Wochen-Übersicht** - Stats der aktuellen Woche\n"
             "**Dashboard aktualisieren** - Google Sheets updaten\n"
             "**Kategorien neu laden** - Aus Sheet synchronisieren"
         ),
@@ -2023,7 +2023,7 @@ async def admin_command(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
-@bot.tree.command(name="auszahlung", description="Auszahlung fuer die aktuelle Woche (nur Admins)")
+@bot.tree.command(name="auszahlung", description="Auszahlung für die aktuelle Woche (nur Admins)")
 async def payout_command(interaction: discord.Interaction):
     if not is_admin(interaction):
         await interaction.response.send_message(
@@ -2041,7 +2041,7 @@ async def payout_command(interaction: discord.Interaction):
         await interaction.followup.send(
             embed=discord.Embed(
                 title="Keine Logs",
-                description=f"Keine Logs fuer {current_week} gefunden.",
+                description=f"Keine Logs für {current_week} gefunden.",
                 color=Colors.WARNING
             ),
             ephemeral=True
@@ -2248,7 +2248,7 @@ async def log_command(
 
 @log_command.autocomplete('kategorie')
 async def log_category_autocomplete(interaction: discord.Interaction, current: str):
-    """Autocomplete fuer Kategorien"""
+    """Autocomplete für Kategorien"""
     active_cats = [
         app_commands.Choice(name=f"{v.get('emoji', '')} {k} ({format_currency(v['betrag'])})", value=k)
         for k, v in bot.categories_cache.items()
@@ -2304,7 +2304,7 @@ async def help_command(interaction: discord.Interaction):
             name="Admin-Befehle",
             value=(
                 "**/setup** - Erstmalige Bot-Einrichtung\n"
-                "**/panel** - Log-Panel fuer Mitglieder erstellen\n"
+                "**/panel** - Log-Panel für Mitglieder erstellen\n"
                 "**/admin** - Admin-Panel oeffnen\n"
                 "**/auszahlung** - Woechentliche Auszahlung"
             ),
@@ -2313,7 +2313,7 @@ async def help_command(interaction: discord.Interaction):
 
     embed.add_field(
         name="Screenshot-Upload",
-        value="Per **/log** direkt als Anhang, oder im Panel ueber den 📷-Button nach dem Loggen.",
+        value="Per **/log** direkt als Anhang, oder im Panel über den 📷-Button nach dem Loggen.",
         inline=False
     )
 
@@ -2381,10 +2381,10 @@ async def on_ready():
 @bot.event
 async def on_interaction(interaction: discord.Interaction):
     """
-    Dynamischer Interaction-Handler fuer persistente Buttons.
+    Dynamischer Interaction-Handler für persistente Buttons.
     Faengt ALLE log_cat_* und log_my_stats Custom-IDs ab,
     auch wenn die Kategorien sich seit dem Panel-Post geaendert haben.
-    Dies ist der Fix fuer das Problem, dass Buttons nach Bot-Restart
+    Dies ist der Fix für das Problem, dass Buttons nach Bot-Restart
     oder Kategorie-Aenderungen nicht mehr reagieren.
     """
     if interaction.type != discord.InteractionType.component:
@@ -2496,7 +2496,7 @@ async def before_dashboard():
 
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
-    """Globaler Error Handler fuer Slash Commands"""
+    """Globaler Error Handler für Slash Commands"""
     print(f"Command Error: {error}")
     traceback.print_exc()
 
