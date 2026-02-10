@@ -16,12 +16,19 @@
 ║              ╚══════╝ ╚═════╝  ╚═════╝     ╚═════╝  ╚═════╝    ╚═╝               ║
 ║                                                                                  ║
 ║                    Universal Log Bot - Admin Edition                             ║
-║                           Version 2.0.0                                          ║
+║                           Version 2.1.0                                          ║
 ║                                                                                  ║
 ║        Dynamisches Log-System mit Admin-Panel & Google Sheets                    ║
 ║        Komplett-Rewrite: Async Sheets, Auto-Refresh, Screenshots                 ║
 ║                                                                                  ║
 ╚══════════════════════════════════════════════════════════════════════════════════╝
+
+Changelog v2.1.0:
+  - NEU: Beweis-Bilder werden als =IMAGE()-Formel direkt in der Zelle angezeigt
+  - NEU: Spalte H automatisch auf 200px Breite formatiert
+  - NEU: Zeilenhoehe automatisch auf 100px fuer sichtbare Bildvorschau
+  - NEU: Archiv-Tab bekommt ebenfalls Bildformatierung
+  - FIX: Header "Bild-URL" umbenannt zu "Beweis-Bild"
 
 Changelog v2.0.0:
   - FIX: Google Sheets Calls laufen jetzt async (kein Event-Loop-Blocking)
@@ -62,7 +69,7 @@ from googleapiclient.errors import HttpError
 # ══════════════════════════════════════════════════════════════════════════════
 
 BOT_NAME = "Universal Log Bot"
-BOT_VERSION = "2.0.0"
+BOT_VERSION = "2.1.0"
 MAX_RETRIES = 3
 RETRY_DELAY = 2  # Sekunden zwischen Retries
 LOG_COOLDOWN = 30  # Sekunden zwischen Logs pro User
@@ -223,6 +230,7 @@ async def ensure_sheet_tabs():
             print(f"{len(tabs_to_create)} Tab(s) erstellt")
 
         await set_sheet_headers()
+        await format_image_column()
         return True
 
     except Exception as e:
@@ -242,7 +250,7 @@ async def set_sheet_headers():
         headers = {
             f"{SHEET_TABS['logs']}!A1:I1": [[
                 "Zeitstempel", "Kalenderwoche", "User", "User-ID",
-                "Kategorie", "Beschreibung", "Betrag", "Bild-URL", "Log-ID"
+                "Kategorie", "Beschreibung", "Betrag", "Beweis-Bild", "Log-ID"
             ]],
             f"{SHEET_TABS['kategorien']}!A1:F1": [[
                 "Kategorie", "Betrag", "Emoji", "Beschreibung", "Aktiv", "Erstellt am"
@@ -257,7 +265,7 @@ async def set_sheet_headers():
             ]],
             f"{SHEET_TABS['archiv']}!A1:J1": [[
                 "Zeitstempel", "Kalenderwoche", "User", "User-ID",
-                "Kategorie", "Beschreibung", "Betrag", "Bild-URL", "Log-ID", "Archiviert am"
+                "Kategorie", "Beschreibung", "Betrag", "Beweis-Bild", "Log-ID", "Archiviert am"
             ]],
             f"{SHEET_TABS['einstellungen']}!A1:B1": [[
                 "Einstellung", "Wert"
@@ -293,6 +301,81 @@ async def set_sheet_headers():
 
     except Exception as e:
         print(f"Header Fehler: {e}")
+
+
+async def format_image_column():
+    """
+    Formatiere die Beweis-Bild-Spalte (H) in Logs und Archiv:
+    - Spaltenbreite auf 200px (damit Bilder sichtbar sind)
+    - Standard-Zeilenhoehe auf 100px fuer Bildspalte
+    """
+    if not bot.sheets_service:
+        return
+
+    try:
+        sheet = bot.sheets_service.spreadsheets()
+
+        # Sheet-IDs holen (jeder Tab hat eine eigene numerische ID)
+        spreadsheet = await sheets_call(
+            sheet.get(spreadsheetId=SPREADSHEET_ID).execute
+        )
+        sheet_ids = {}
+        for s in spreadsheet.get('sheets', []):
+            title = s['properties']['title']
+            sid = s['properties']['sheetId']
+            sheet_ids[title] = sid
+
+        requests = []
+
+        for tab_name in [SHEET_TABS['logs'], SHEET_TABS['archiv']]:
+            sid = sheet_ids.get(tab_name)
+            if sid is None:
+                continue
+
+            # Spalte H (Index 7) auf 200px Breite setzen
+            requests.append({
+                'updateDimensionProperties': {
+                    'range': {
+                        'sheetId': sid,
+                        'dimension': 'COLUMNS',
+                        'startIndex': 7,
+                        'endIndex': 8
+                    },
+                    'properties': {
+                        'pixelSize': 200
+                    },
+                    'fields': 'pixelSize'
+                }
+            })
+
+            # Standardmaessig Zeilen ab Row 2 auf 100px Hoehe
+            # (Row 1 = Header, bleibt normal)
+            requests.append({
+                'updateDimensionProperties': {
+                    'range': {
+                        'sheetId': sid,
+                        'dimension': 'ROWS',
+                        'startIndex': 1,   # Ab Zeile 2 (0-indexed)
+                        'endIndex': 1000   # Erste 1000 Zeilen
+                    },
+                    'properties': {
+                        'pixelSize': 100
+                    },
+                    'fields': 'pixelSize'
+                }
+            })
+
+        if requests:
+            await sheets_call(
+                sheet.batchUpdate(
+                    spreadsheetId=SPREADSHEET_ID,
+                    body={'requests': requests}
+                ).execute
+            )
+            print("Bild-Spalte formatiert (200px breit, 100px Zeilenhoehe)")
+
+    except Exception as e:
+        print(f"Bild-Spalte Formatierung Fehler: {e}")
 
 
 async def write_audit_log(admin: discord.Member, aktion: str, details: str, objekt: str = ""):
@@ -486,6 +569,9 @@ async def save_log_entry(user: discord.Member, kategorie: str, beschreibung: str
         betrag = bot.categories_cache.get(kategorie, {}).get("betrag", 0)
         log_id = f"LOG-{now.strftime('%Y%m%d%H%M%S')}-{user.id}"
 
+        # Bild als IMAGE()-Formel fuer direkte Anzeige im Sheet
+        bild_zelle = f'=IMAGE("{image_url}")' if image_url else ""
+
         values = [[
             timestamp,
             f"KW{week_number}/{year}",
@@ -494,7 +580,7 @@ async def save_log_entry(user: discord.Member, kategorie: str, beschreibung: str
             kategorie,
             beschreibung,
             betrag,
-            image_url,
+            bild_zelle,
             log_id
         ]]
 
@@ -523,18 +609,22 @@ async def save_log_entry(user: discord.Member, kategorie: str, beschreibung: str
 
 
 async def update_log_image(row_number: int, image_url: str):
-    """Aktualisiere die Bild-URL eines bestehenden Log-Eintrags"""
+    """Aktualisiere das Beweis-Bild eines bestehenden Log-Eintrags (als IMAGE-Formel)"""
     if not bot.sheets_service or row_number <= 0:
         return False
 
     try:
         sheet = bot.sheets_service.spreadsheets()
+
+        # IMAGE()-Formel fuer direkte Anzeige im Sheet
+        bild_zelle = f'=IMAGE("{image_url}")' if image_url else ""
+
         await sheets_call(
             sheet.values().update(
                 spreadsheetId=SPREADSHEET_ID,
                 range=f"{SHEET_TABS['logs']}!H{row_number}",
                 valueInputOption='USER_ENTERED',
-                body={'values': [[image_url]]}
+                body={'values': [[bild_zelle]]}
             ).execute
         )
         return True
